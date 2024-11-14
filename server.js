@@ -1,12 +1,16 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
-import mongoose from 'mongoose'
+import cookieParser from 'cookie-parser'
+import { AllJobs } from './models/jobSchema.js'
+import { connectDb } from './db/connectDb.js'
+import authRoutes from './routes/auth.route.js'
 
 const app = express()
 dotenv.config()
 
-app.use(express.json())
+app.use(express.json()); // allows to parse the incoming req
+app.use(cookieParser()) // allows to parse the incoming cookies
 app.use(cors())
 
 const port = process.env.PORT || 8080
@@ -15,51 +19,7 @@ app.get('/', (req, res) => {
     res.send('hello world');
 });
 
-mongoose.connect(process.env.URI)
-.then(() => console.log('MongoDb connected'))
-.catch((err) => console.log('MongoDb Error:', err));
-
-// schema
-const jobSchema = new mongoose.Schema({
-  title: {
-    type: String,
-  },
-  experience: {
-    type: Number,
-  },
-  salary: {
-    type: Number,
-  },
-  datePosted: {
-    type: String,
-  },
-  highestEducation: {
-    type: String,
-  },
-  workMode: {
-    type: Array,
-  },
-  workType: {
-    type: Array,
-  },
-  workShift: {
-    type: Array,
-  },
-  department: {
-    type: Array,
-  },
-  englishLevel: {
-    type: String,
-  },
-  gender: {
-    type: String,
-  },
-  location: {
-    type: String
-  }
-});
-
-const AllJobs = mongoose.model('Job', jobSchema);
+app.use('/api/auth', authRoutes);
 
 app.post('/jobs-upload', async(req, res) => {
   // const job = new AllJobs({
@@ -167,5 +127,6 @@ app.get('/jobs', async(req, res) => {
 })
 
 app.listen(port, () => {
-    console.log(`server is listening at port ${port}`);
+  connectDb();
+  console.log(`server is listening at port ${port}`);
 });
