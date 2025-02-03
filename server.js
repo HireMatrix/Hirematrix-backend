@@ -11,7 +11,10 @@ dotenv.config()
 
 app.use(express.json()); // allows to parse the incoming req
 app.use(cookieParser()) // allows to parse the incoming cookies
-app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+}))
 
 const port = process.env.PORT || 8080
 
@@ -22,19 +25,19 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 app.post('/jobs-upload', async(req, res) => {
-  // const job = new AllJobs({
-  //   title: req.body.title,
-  //   experience: req.body.experience,
-  //   salary: req.body.salary,
-  //   datePosted: req.body.datePosted,
-  //   highestEducation: req.body.highestEducation,
-  //   workMode: req.body.workMode,
-  //   workType: req.body.workType,
-  //   workShift: req.body.workShift,
-  //   department: req.body.department,
-  //   englishLevel: req.body.englishLevel,
-  //   gender: req.body.gender,
-  // });
+  const job = new AllJobs({
+    title: req.body.title,
+    experience: req.body.experience,
+    salary: req.body.salary,
+    datePosted: req.body.datePosted,
+    highestEducation: req.body.highestEducation,
+    workMode: req.body.workMode,
+    workType: req.body.workType,
+    workShift: req.body.workShift,
+    department: req.body.department,
+    englishLevel: req.body.englishLevel,
+    gender: req.body.gender,
+  });
   const jobs = req.body;
   await AllJobs.insertMany(jobs)
   res.json({
@@ -45,6 +48,8 @@ app.post('/jobs-upload', async(req, res) => {
 
 app.get('/jobs', async(req, res) => {
   const { sortBy, experience, salary, datePosted, highestEducation, workMode, workType, workShift, department, englishLevel, gender } = req.query;
+
+  console.log(req.query);
   const filter = {}
 
   let sortCriteria;
@@ -114,11 +119,10 @@ app.get('/jobs', async(req, res) => {
   if(gender){
     filter.gender = gender
   }
-
-  // console.log(filter)
   
   try{
     const jobs = await AllJobs.find(filter).sort(sortCriteria)
+    console.log(jobs)
     res.send(jobs)
   }catch(err){
     console.log('Error fetching jobs:', err);
