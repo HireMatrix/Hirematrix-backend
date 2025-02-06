@@ -5,6 +5,9 @@ import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js
 import { sendForgotPasswordEmail, sendResetPasswordSuccess, sendVerificationEmail, sendWelcomeEmail } from "../nodemailer/email.js";
 
 export const checkAuth = async (req, res) => {
+
+    console.log(req.userId);
+
     try {
         const user = await User.findById(req.userId).select("-password");
 
@@ -36,20 +39,24 @@ export const signUp = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const temporaryRouteToken = crypto.randomBytes(20).toString("hex");
+        const temporaryRouteTokenExpiresAt = Date.now() + 1 * 60 * 60 * 1000;
 
         const user = new User({
             email,
             password: hashedPassword,
             name,
             verificationToken,
-            verificationTokenExpiresAt: Date.now() + (1 * 60 * 60 * 1000)
+            verificationTokenExpiresAt: Date.now() + (1 * 60 * 60 * 1000),
+            temporaryRouteToken,
+            temporaryRouteTokenExpiresAt
         });
 
         await user.save();
 
         generateTokenAndSetCookie(res, user._id);
 
-        await sendVerificationEmail(user.email, verificationToken);
+        await sendVerificationEmail(user.email, verificationToken, `${process.env.CLIENT_URL}/verify-email/${temporaryRouteToken}`);
 
         res.status(201).json({
             success: true,
@@ -67,20 +74,25 @@ export const signUp = async (req, res) => {
 
 export const verifyEmail = async (req, res) => {
     const {token} = req.body;
+    const {temporaryToken} = req.params;
 
     try {
         const user = await User.findOne({
             verificationToken: token,
-            verificationTokenExpiresAt: { $gt: Date.now() }
+            verificationTokenExpiresAt: { $gt: Date.now() },
+            temporaryRouteToken: temporaryToken,
+            temporaryRouteTokenExpiresAt: { $gt: Date.now() }
         })
 
         if(!user || user == null){
-            throw new Error({ success: false, message: "Invalid Token or The Token is Expired "});
+            return res.status(400).json({success: false, message: "Invalid Otp"})
         }
 
         user.isVerified = true;
-        user.verificationToken = undefined,
+        user.verificationToken = undefined;
         user.verificationTokenExpiresAt = undefined;
+        user.temporaryRouteToken = undefined;
+        user.temporaryRouteTokenExpiresAt = undefined;
 
         await user.save();
 
@@ -90,7 +102,13 @@ export const verifyEmail = async (req, res) => {
 
     } catch (error) {
         console.log("Error in sending the email", error);
-        res.status(400).json({success: false, message: "Server Error"})
+        res.status(400).json({
+            success: false,
+            user: {
+                ...user._doc,
+                password: undefined
+            }, 
+            message: "Server Error"})
     }
 }
 
@@ -101,7 +119,7 @@ export const login = async (req, res) => {
         const user = await User.findOne({email});
 
         if(!user){
-            return res.status(400).json({ success : false, message : "Invalid credentials"});
+            return res.status(400).json({ success : false, message : "User doesn't exits please signUp"});
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -137,10 +155,18 @@ export const logout = async (req, res) => {
 export const forgotPassword = async(req, res) => {
     const {email} = req.body;
 
+    console.log(email)
+
     try {
         const user = await User.findOne({ email });
 
         if(!user || user == null){
+            if(!user.isAuthenticated) {
+                return res.status(400).json({
+                    success : false,
+                    message: 'Please very your email id for changing the password'
+                })
+            }
             return res.status(400).json({ success : false, message: 'User not found' })
         }
 
@@ -154,7 +180,12 @@ export const forgotPassword = async(req, res) => {
 
         await sendForgotPasswordEmail(user.email, `${process.env.CLIENT_URL}/reset-password/${resetToken}`);
 
-        res.status(200).json({ success : true, message : "Password reset link sent successfully" });
+        res.status(200).json({ success : true,
+            user: {
+                ...user._doc,
+                password: undefined,
+            },
+            message : "Password reset link sent successfully" });
     } catch (error) {
         console.log("Error in forgot password", error);
         res.status(400).json({success : false, message : error.message});

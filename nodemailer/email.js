@@ -1,7 +1,7 @@
 import { PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE, WELCOME_EMAIL_TEMPLATE } from "./emailTemplates.js";
 import { sender, transport } from "./email.config.js";
 
-export const sendVerificationEmail = async (email, verificationToken) => {
+export const sendVerificationEmail = async (email, verificationToken, acessToken) => {
     const recipients = [email];
 
     try {
@@ -9,7 +9,7 @@ export const sendVerificationEmail = async (email, verificationToken) => {
             from: sender,
             to: recipients,
             subject: 'Your Verfication token',
-            html: VERIFICATION_EMAIL_TEMPLATE.replace("{verificationCode}", verificationToken),
+            html: VERIFICATION_EMAIL_TEMPLATE.replace("{verificationCode}", verificationToken).replaceAll("{temporaryToken}", acessToken),
             category: "Email Verfication"
         })
 

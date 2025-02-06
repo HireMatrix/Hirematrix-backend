@@ -12,12 +12,23 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
   </div>
   <div style="background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
     <p>Hello,</p>
-    <p>Thank you for signing up! Your verification code is:</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4CAF50;">{verificationCode}</span>
+    <p>Thank you for signing up! You can verify your email using either of the methods below:</p>
+
+    <div style="margin-bottom: 20px;">
+      <p>Your verification code is:</p>
+      <div style="text-align: center; margin: 10px 0;">
+        <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4CAF50;">{verificationCode}</span>
+      </div>
+      <p>Enter this code on the verification page to complete your registration.</p>
     </div>
-    <p>Enter this code on the verification page to complete your registration.</p>
-    <p>This code will expire in 15 minutes for security reasons.</p>
+
+    <div>
+      <a href="{temporaryToken}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
+      <p style="margin-top: 10px;">Or, if the button doesn't work, you can copy and paste the following link into your browser:</p>
+      <p style="word-break: break-all;">{temporaryToken}</p>
+    </div>
+
+    <p>Both the code and the link will expire in 15 minutes for security reasons.</p>
     <p>If you didn't create an account with us, please ignore this email.</p>
     <p>Best regards,<br>HireMatrix Team</p>
   </div>
