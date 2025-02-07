@@ -122,7 +122,6 @@ app.get('/jobs', async(req, res) => {
   
   try{
     const jobs = await AllJobs.find(filter).sort(sortCriteria)
-    // console.log(jobs)
     res.send(jobs)
   }catch(err){
     console.log('Error fetching jobs:', err);
