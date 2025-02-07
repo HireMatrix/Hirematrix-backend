@@ -158,18 +158,19 @@ export const logout = async (req, res) => {
 export const forgotPassword = async(req, res) => {
     const {email} = req.body;
 
-    console.log(email)
+    // console.log(email)
 
     try {
         const user = await User.findOne({ email });
 
+        if(user !== null && !user && !user.isAuthenticated && user.isAuthenticated !== null) {
+            return res.status(400).json({
+                success : false,
+                message: 'Please verify your email id for changing the password'
+            })
+        }
+
         if(!user || user == null){
-            if(!user.isAuthenticated) {
-                return res.status(400).json({
-                    success : false,
-                    message: 'Please verify your email id for changing the password'
-                })
-            }
             return res.status(400).json({ success : false, message: 'User not found' })
         }
 

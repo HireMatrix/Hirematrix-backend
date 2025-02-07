@@ -42,12 +42,14 @@ export const sendWelcomeEmail = async (email, name) => {
 export const sendForgotPasswordEmail = async (email, token) => {
     const recipients = [email];
 
+    console.log(token);
+
     try {
         const response = await transport.sendMail({
             from: sender,
             to: recipients,
             subject: "Reset your Password",
-            html: PASSWORD_RESET_REQUEST_TEMPLATE.replaceAll("{resetURL}", token),
+            html: PASSWORD_RESET_REQUEST_TEMPLATE.replaceAll("{resetUrl}", token),
             category: "Reset Password"
         });
     
