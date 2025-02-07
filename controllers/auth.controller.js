@@ -6,7 +6,7 @@ import { sendForgotPasswordEmail, sendResetPasswordSuccess, sendVerificationEmai
 
 export const checkAuth = async (req, res) => {
 
-    console.log(req.userId);
+    // console.log(req.userId);
 
     try {
         const user = await User.findById(req.userId).select("-password");
@@ -73,12 +73,12 @@ export const signUp = async (req, res) => {
 }
 
 export const verifyEmail = async (req, res) => {
-    const {token} = req.body;
+    const {authOtp} = req.body;
     const {temporaryToken} = req.params;
 
     try {
         const user = await User.findOne({
-            verificationToken: token,
+            verificationToken: authOtp,
             verificationTokenExpiresAt: { $gt: Date.now() },
             temporaryRouteToken: temporaryToken,
             temporaryRouteTokenExpiresAt: { $gt: Date.now() }
@@ -98,16 +98,19 @@ export const verifyEmail = async (req, res) => {
 
         await sendWelcomeEmail(user.email, user.name);
 
-        res.status(201).json({success: true, message: "User verified successfully"})
+        res.status(201).json({
+            success: true, 
+            user: {
+                ...user._doc,
+                password: undefined
+            }, 
+            message: "User verified successfully"
+        })
 
     } catch (error) {
         console.log("Error in sending the email", error);
         res.status(400).json({
             success: false,
-            user: {
-                ...user._doc,
-                password: undefined
-            }, 
             message: "Server Error"})
     }
 }
@@ -164,7 +167,7 @@ export const forgotPassword = async(req, res) => {
             if(!user.isAuthenticated) {
                 return res.status(400).json({
                     success : false,
-                    message: 'Please very your email id for changing the password'
+                    message: 'Please verify your email id for changing the password'
                 })
             }
             return res.status(400).json({ success : false, message: 'User not found' })
@@ -193,7 +196,7 @@ export const forgotPassword = async(req, res) => {
 };
 
 export const resetPassword = async(req, res) => {
-    const {password} = req.body;
+    const {confirmPassword} = req.body;
     const {token} = req.params;
 
     try {
@@ -206,7 +209,7 @@ export const resetPassword = async(req, res) => {
             return res.status(400).json({ success : false, message : "Invalid or expired reset token" });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(confirmPassword, 10);
 
         user.password = hashedPassword;
         user.resetPasswordToken = undefined;

@@ -47,7 +47,7 @@ export const sendForgotPasswordEmail = async (email, token) => {
             from: sender,
             to: recipients,
             subject: "Reset your Password",
-            html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", token),
+            html: PASSWORD_RESET_REQUEST_TEMPLATE.replaceAll("{resetURL}", token),
             category: "Reset Password"
         });
     

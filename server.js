@@ -49,7 +49,7 @@ app.post('/jobs-upload', async(req, res) => {
 app.get('/jobs', async(req, res) => {
   const { sortBy, experience, salary, datePosted, highestEducation, workMode, workType, workShift, department, englishLevel, gender } = req.query;
 
-  console.log(req.query);
+  // console.log(req.query);
   const filter = {}
 
   let sortCriteria;
@@ -122,7 +122,7 @@ app.get('/jobs', async(req, res) => {
   
   try{
     const jobs = await AllJobs.find(filter).sort(sortCriteria)
-    console.log(jobs)
+    // console.log(jobs)
     res.send(jobs)
   }catch(err){
     console.log('Error fetching jobs:', err);
