@@ -24,11 +24,11 @@ app.get('/', (req, res) => {
     res.send('hello world');
 });
 
-app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
 
-app.use('/api', jobRoutes);
+app.use('/api/v1', jobRoutes);
 
-app.use('/api/admin', adminRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.post('/jobs-upload', async(req, res) => {
   const job = new AllJobs({
