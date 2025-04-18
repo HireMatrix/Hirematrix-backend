@@ -1,5 +1,5 @@
 import express from 'express'
-import { AllJobsAdmin, AllUsersAdmin, DeleteJob, DeleteUser, GetJobsFromUrl, UploadJob, UploadMultipleJobs } from '../controllers/admin.controller.js';
+import { AllJobsAdmin, AllUsersAdmin, DeleteJob, DeleteUser, GetCachedJobs, GetJobsFromUrl, UploadJob, UploadMultipleJobs } from '../controllers/admin.controller.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 import { adminAuth } from '../middleware/adminAuth.js';
 
@@ -21,5 +21,7 @@ router.delete('/delete-user', verifyToken, adminAuth, DeleteUser);
 
 // scraping - route
 router.get('/web-scraping', verifyToken, adminAuth, GetJobsFromUrl);
+
+router.get('/scraped-data', verifyToken, adminAuth, GetCachedJobs);
 
 export default router;
