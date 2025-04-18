@@ -1,6 +1,8 @@
 import { AllJobs } from "../models/jobSchema.js"
 import { User } from "../models/userSchema.js";
 import { scrapeJobsFromUrl } from "../utils/jobScraper.js";
+import { validateJobData } from "../utils/validateJobData.js";
+import redisClient from '../db/redisClient.js';
 
 export const AllJobsAdmin = async (req, res) => {
     try {
@@ -171,7 +173,7 @@ export const GetJobsFromUrl = async (req, res) => {
             })
         }
 
-        const jobs = await scrapeJobsFromUrl(url);
+        const jobs = await scrapeJobsFromUrl('https://apna.co/jobs');
 
         if(!jobs) {
             return res.status(404).json({
@@ -179,10 +181,25 @@ export const GetJobsFromUrl = async (req, res) => {
             })
         }
 
-        res.status(200).json({ 
-            message: "successfully found Jobs",
-            jobs: jobs
-        })
+        const validatedJobs = [];
+
+        // for this type checking we can also use the jod, yup, joi
+        for(const job of jobs) {
+            if(!validateJobData(job)) {
+                continue;
+            }
+            const cacheKey = `job:${job.title}`;
+            const cachedJob = await redisClient.get(cacheKey);
+
+            if(cachedJob) {
+                validatedJobs.push(JSON.parse(job));
+            } else {
+                await redisClient.set(cacheKey, JSON.stringify(job), { EX: 3600 })
+                validatedJobs.push(job)
+            }
+        }
+
+        res.status(200).json(validatedJobs);
     } catch (error) {
         console.log(error);
         res.status(500).json({
@@ -190,3 +207,26 @@ export const GetJobsFromUrl = async (req, res) => {
         });
     }
 }
+
+export const GetCachedJobs = async (req, res) => {
+    try {
+        const keys = await redisClient.keys('job:*');
+        if (!keys.length) {
+            return res.status(404).json({ message: 'No jobs found in cache' });
+        }
+
+        const jobs = [];
+
+        for (const key of keys) {
+            const data = await redisClient.get(key);
+            if (data) {
+                jobs.push(JSON.parse(data));
+            }
+        }
+
+        res.status(200).json(jobs);
+    } catch (error) {
+        console.error('Error fetching cached jobs:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

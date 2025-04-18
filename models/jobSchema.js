@@ -36,6 +36,9 @@ const jobSchema = new mongoose.Schema({
     },
     location: {
       type: String
+    },
+    description: {
+      type: String,
     }
 });
   
