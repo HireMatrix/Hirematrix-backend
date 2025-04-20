@@ -20,6 +20,51 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    fullName: {
+        type: String,
+    },
+    gender: {
+        type: String,
+    },
+    education: {
+        highestQualification: {
+            type: String,
+        },
+        fieldOfStudy: {
+            type: String,
+        },
+        englishLevel: {
+            type: String,
+        }
+    },
+    experience: {
+        totalYears: {
+            type: Number,
+        },
+        currentJobTitle: {
+            type: String,
+        },
+        skills: {
+            type: [String],
+        }
+    },
+    preferences: {
+        jobTitle: {
+            type: String,
+        },
+        workMode: {
+            type: [String],
+        },
+        workType: {
+            type: [String],
+        },
+        workShift: {
+            type: [String],
+        },
+        expectedSalary: {
+            type: Number,
+        }
+    },
     lastLogin: {
         type: Date,
         default: Date.now,
@@ -27,6 +72,10 @@ const userSchema = new mongoose.Schema({
     isVerified: {
         type: Boolean,
         default: false,
+    },
+    hasCompletedOnboarding: {
+        type: Boolean,
+        default: false
     },
     userType: {
         type: String,

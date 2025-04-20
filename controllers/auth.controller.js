@@ -226,3 +226,48 @@ export const resetPassword = async(req, res) => {
         res.status(400).json({ success : false, message : "Error at password reset" });
     }
 };
+
+export const updateCandidateDetails = async(req, res) => {
+    try {
+        const {
+            userEmail,
+            fullName,
+            gender,
+            education,
+            experience,
+            preferences
+        } = req.body;
+
+        if(!userEmail) {
+            return res.status(400).json({
+                message: 'User email is required'
+            })
+        }
+
+        const user = await User.findOne({
+            email: userEmail
+        })
+
+        if(!user) {
+            res.status(404).json({
+                message: 'User not found'
+            })
+        }
+
+        if (fullName) user.fullName = fullName;
+        if (gender) user.gender = gender;
+        if (education) user.education = { ...user.education, ...education };
+        if (experience) user.experience = { ...user.experience, ...experience };
+        if (preferences) user.preferences = { ...user.preferences, ...preferences };
+
+        user.hasCompletedOnboarding = true;
+
+        await user.save();
+
+        res.status(200).json({ message: 'Candidate details updated successfully', user });
+
+    } catch (error) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
