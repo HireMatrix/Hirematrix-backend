@@ -3,6 +3,10 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
 import { sendForgotPasswordEmail, sendResetPasswordSuccess, sendVerificationEmail, sendWelcomeEmail } from "../nodemailer/email.js";
+import { AllJobs } from "../models/jobSchema.js";
+import { calculateCosineSimilarity } from "../utils/embedding.js";
+import redisClient from "../db/redisClient.js";
+import axios from 'axios';
 
 export const checkAuth = async (req, res) => {
 
@@ -227,47 +231,78 @@ export const resetPassword = async(req, res) => {
     }
 };
 
-export const updateCandidateDetails = async(req, res) => {
+export const updateCandidateDetails = async (req, res) => {
     try {
-        const {
-            userEmail,
-            fullName,
-            gender,
-            education,
-            experience,
-            preferences
-        } = req.body;
-
-        if(!userEmail) {
-            return res.status(400).json({
-                message: 'User email is required'
-            })
-        }
-
-        const user = await User.findOne({
-            email: userEmail
-        })
-
-        if(!user) {
-            res.status(404).json({
-                message: 'User not found'
-            })
-        }
-
-        if (fullName) user.fullName = fullName;
-        if (gender) user.gender = gender;
-        if (education) user.education = { ...user.education, ...education };
-        if (experience) user.experience = { ...user.experience, ...experience };
-        if (preferences) user.preferences = { ...user.preferences, ...preferences };
-
-        user.hasCompletedOnboarding = true;
-
-        await user.save();
-
-        res.status(200).json({ message: 'Candidate details updated successfully', user });
-
+      const {
+        userEmail,
+        fullName,
+        gender,
+        education,
+        experience,
+        preferences
+      } = req.body;
+  
+      if (!userEmail) {
+        return res.status(400).json({ message: 'User email is required' });
+      }
+  
+      const user = await User.findOne({ email: userEmail });
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      if (fullName) user.fullName = fullName;
+      if (gender) user.gender = gender;
+      if (education) user.education = { ...user.education, ...education };
+      if (experience) user.experience = { ...user.experience, ...experience };
+      if (preferences) user.preferences = { ...user.preferences, ...preferences };
+  
+      user.hasCompletedOnboarding = true;
+  
+      const candidateText = `
+        Full Name: ${user.fullName}
+        Gender: ${user.gender}
+        Highest Qualification: ${user.education?.highestQualification}
+        Field of Study: ${user.education?.fieldOfStudy}
+        English Level: ${user.education?.englishLevel}
+        Experience: ${user.experience?.totalYears} years
+        Current Job Title: ${user.experience?.currentJobTitle}
+        Skills: ${user.experience?.skills?.join(", ")}
+        Preferred Job Title: ${user.preferences?.jobTitle}
+        Work Mode: ${user.preferences?.workMode?.join(", ")}
+        Work Type: ${user.preferences?.workType?.join(", ")}
+        Work Shift: ${user.preferences?.workShift?.join(", ")}
+        Expected Salary: ${user.preferences?.expectedSalary}
+      `.trim();
+  
+      const embeddingResponse = await axios.post('http://127.0.0.1:8000/embedding', {
+        model: 'nomic-embed-text',
+        prompt: candidateText
+      });
+  
+      const userEmbedding = embeddingResponse.data.embedding;
+      user.embedding = userEmbedding;
+  
+      await user.save();
+  
+      const allJobs = await AllJobs.find({ embedding: { $exists: true } });
+  
+      const jobSimilarityList = allJobs.map(job => ({
+        job,
+        score: calculateCosineSimilarity(userEmbedding, job.embedding)
+      }));
+  
+      const topJobs = jobSimilarityList
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.job);
+  
+      await redisClient.set(`recommended_jobs:${user._id}`, JSON.stringify(topJobs), { EX: 3600 });
+  
+      res.status(200).json({ message: 'Candidate details updated successfully', user });
+  
     } catch (error) {
-        console.error(err);
-        res.status(500).json({ message: 'Internal server error' });
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-};
+};  

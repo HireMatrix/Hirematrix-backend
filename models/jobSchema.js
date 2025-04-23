@@ -39,6 +39,10 @@ const jobSchema = new mongoose.Schema({
     },
     description: {
       type: String,
+    },
+    embedding: {
+      type: [Number],
+      required: true
     }
 });
   
