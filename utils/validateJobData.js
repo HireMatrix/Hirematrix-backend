@@ -1,20 +1,5 @@
 export const validateJobData = (data) => {
-    if(
-        !data.title || 
-        !data.experience || 
-        !data.salary || 
-        !data.highestEducation || 
-        !data.workMode || 
-        !data.workType || 
-        !data.workShift ||
-        !data.department ||
-        !data.englishLevel ||
-        !data.gender ||
-        !data.location ||
-        !data.description
-    ) {
-        return false;
-    } else if (
+    if (
         typeof data.title !== "string" ||
         typeof data.experience !== "number" ||
         typeof data.salary !== "number" ||

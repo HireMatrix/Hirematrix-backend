@@ -82,6 +82,9 @@ const userSchema = new mongoose.Schema({
         enum: ["general", "admin", "employer"],
         default: 'general',
     },
+    embedding: {
+        type: [Number],
+    },
     resetPasswordToken: String,
     resetPasswordExpiresAt: Date,
     verificationToken: String,

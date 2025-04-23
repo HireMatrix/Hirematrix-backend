@@ -24,59 +24,79 @@ export const AllJobsAdmin = async (req, res) => {
 
 export const UploadJob = async (req, res) => {
     try {
-        const { 
-            jobTitle, 
-            experience, 
-            salary,
-            highestEducation,
-            workMode,
-            workType,
-            workShift,
-            department,
-            englishLevel,
-            gender,
-            location
-        } = req.body;
-
-        if (!jobTitle || !experience || !salary || !highestEducation || !department || !location) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields.",
-            });
-        }
-
-        const job = new AllJobs({
-            title: jobTitle,
-            experience: experience,
-            salary: salary,
-            datePosted: new Date().toISOString().split('T')[0],
-            highestEducation: highestEducation,
-            workMode: workMode,
-            workType: workType,
-            workShift: workShift,
-            department: department,
-            englishLevel: englishLevel,
-            gender: gender,
-            location: location
-        })
-        
-        await job.save()
-
-        res.status(201).json({
-            success: true,
-            message: "job created successfully",
-            jobs: {
-                ...job,
-            }
+      const { 
+        jobTitle, 
+        experience, 
+        salary,
+        highestEducation,
+        workMode,
+        workType,
+        workShift,
+        department,
+        englishLevel,
+        gender,
+        location
+      } = req.body;
+  
+      if (!jobTitle || !experience || !salary || !highestEducation || !department || !location) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields.",
         });
+      }
+  
+      const text = `
+        Title: ${jobTitle}
+        Experience: ${experience} years
+        Salary: ${salary}
+        Education: ${highestEducation}
+        Work Mode: ${workMode?.join(", ")}
+        Work Type: ${workType?.join(", ")}
+        Work Shift: ${workShift?.join(", ")}
+        Department: ${department?.join(", ")}
+        English Level: ${englishLevel}
+        Gender: ${gender}
+        Location: ${location}
+      `.trim();
+  
+      const embeddingResponse = await axios.post('http://127.0.0.1:8000/embedding', {
+        model: 'nomic-embed-text',
+        prompt: text,
+      });
+  
+      const embedding = embeddingResponse.data.embedding;
+  
+      const job = new AllJobs({
+        title: jobTitle,
+        experience,
+        salary,
+        datePosted: new Date().toISOString().split('T')[0],
+        highestEducation,
+        workMode,
+        workType,
+        workShift,
+        department,
+        englishLevel,
+        gender,
+        location,
+        embedding,
+      });
+  
+      await job.save();
+  
+      res.status(201).json({
+        success: true,
+        message: "Job created successfully",
+        job
+      });
     } catch (error) {
-        console.log('Error is Posting job:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server Error'
-        });
+      console.error('Error in Posting job:', error.message);
+      res.status(500).json({
+        success: false,
+        message: 'Server Error'
+      });
     }
-}
+};
 
 // Todo - for multiple routes
 export const UploadMultipleJobs = async(req, res) => {}
@@ -173,7 +193,14 @@ export const GetJobsFromUrl = async (req, res) => {
             })
         }
 
-        const jobs = await scrapeJobsFromUrl('https://apna.co/jobs');
+        (async () => {
+            try {
+                const jobs = await scrapeJobsFromUrl('https://apna.co/jobs');
+                process.exit(0);
+            } catch (error) {
+                process.exit(1);
+            }
+        })();
 
         if(!jobs) {
             return res.status(404).json({
@@ -188,12 +215,14 @@ export const GetJobsFromUrl = async (req, res) => {
             if(!validateJobData(job)) {
                 continue;
             }
-            const cacheKey = `job:${job.title}`;
+            const cacheKey = `job:${job.title}:${job.company}`;
             const cachedJob = await redisClient.get(cacheKey);
 
             if(cachedJob) {
-                validatedJobs.push(JSON.parse(job));
+                console.log(job)
+                validatedJobs.push(job);
             } else {
+                console.log(job)
                 await redisClient.set(cacheKey, JSON.stringify(job), { EX: 3600 })
                 validatedJobs.push(job)
             }
