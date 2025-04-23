@@ -193,14 +193,7 @@ export const GetJobsFromUrl = async (req, res) => {
             })
         }
 
-        (async () => {
-            try {
-                const jobs = await scrapeJobsFromUrl('https://apna.co/jobs');
-                process.exit(0);
-            } catch (error) {
-                process.exit(1);
-            }
-        })();
+        const jobs = await scrapeJobsFromUrl('https://apna.co/jobs');
 
         if(!jobs) {
             return res.status(404).json({
@@ -219,10 +212,8 @@ export const GetJobsFromUrl = async (req, res) => {
             const cachedJob = await redisClient.get(cacheKey);
 
             if(cachedJob) {
-                console.log(job)
                 validatedJobs.push(job);
             } else {
-                console.log(job)
                 await redisClient.set(cacheKey, JSON.stringify(job), { EX: 3600 })
                 validatedJobs.push(job)
             }
