@@ -21,7 +21,7 @@ export const fetchAllJobs = async (req, res) => {
 
   const filterFn = (job) => {
     if (experience && experience !== "21" && job.experience > Number(experience)) return false;
-    if (salary && salary !== "0" && job.salary > Number(salary)) return false;
+    if (salary && salary !== "0" && job.salary > Number(salary * 10000)) return false;
     if (highestEducation && job.highestEducation !== highestEducation) return false;
     if (datePosted && datePosted !== "All") {
       const hours = Number(datePosted);
